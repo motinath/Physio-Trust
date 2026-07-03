@@ -1,0 +1,3 @@
+Processed Windows: 361
+Acceptance Rate: 100.0%
+Personalized Variance Baseline: 0.9984
