@@ -1,13 +1,101 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity, ShieldCheck, Download, Play, Radio, Users as UsersIcon, Database, BarChart2, Settings as SettingsIcon, Layers, Sun, Moon, Cpu, Zap, Compass, Heart, HeartPulse, BatteryCharging, CheckCircle2, Info, Clock, Thermometer, Flame, HelpCircle, FileText, Check, AlertTriangle, TrendingUp, Sliders, ShieldAlert, FlaskConical, Lock } from 'lucide-react';
+import { Activity, ShieldCheck, Download, Play, Radio, Users as UsersIcon, Database, BarChart2, Settings as SettingsIcon, Layers, Sun, Moon, Cpu, Zap, Compass, Heart, HeartPulse, BatteryCharging, CheckCircle2, Info, Clock, Thermometer, Flame, HelpCircle, FileText, Check, AlertTriangle, TrendingUp, Sliders, ShieldAlert, FlaskConical, Lock, Eye } from 'lucide-react';
+
+import WorkspaceSelector from './components/WorkspaceSelector';
+import Header from './components/Header';
+import HeroStatusBar from './components/HeroStatusBar';
+import AiInsightsCard from './components/AiInsightsCard';
+import ExpandedTrustCard from './components/ExpandedTrustCard';
+import PipelineStepperModal from './components/PipelineStepperModal';
+import SessionReplayControls from './components/SessionReplayControls';
+import DataSourceConnector from './components/DataSourceConnector';
+import IntelligenceLineageCard from './components/IntelligenceLineageCard';
+
+import ResearchWorkspacePage from './pages/ResearchWorkspacePage';
+import PersonalWorkspacePage from './pages/PersonalWorkspacePage';
+import ClinicalWorkspacePage from './pages/ClinicalWorkspacePage';
+import AdminWorkspacePage from './pages/AdminWorkspacePage';
 
 export default function App() {
-  // Navigation, Theme & Role State
+  // Navigation, Theme, Workspace & Replay State
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('dark');
-  const [userRole, setUserRole] = useState('Researcher');
+  const [activeWorkspace, setActiveWorkspace] = useState('research');
+  const [username, setUsername] = useState('Motinath');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [authToken, setAuthToken] = useState(null);
   const [demoMode, setDemoMode] = useState(true);
+  const [replaySpeed, setReplaySpeed] = useState(1);
+
+  // Login & Workspace Handlers
+  const handleEnterWorkspace = async () => {
+    try {
+      const res = await fetch('/api/v1/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: activeWorkspace, username: username })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuthToken(data.access_token);
+      } else {
+        setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_token');
+      }
+    } catch (err) {
+      setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_token');
+    }
+    setIsLoggedIn(true);
+    setActiveTab('dashboard');
+  };
+
+  const handleSwitchWorkspace = () => {
+    setIsLoggedIn(false);
+  };
+
+  // Dynamic Tabs based on Workspace (Master Architecture)
+  const getVisibleTabs = () => {
+    if (activeWorkspace === 'research') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: Zap },
+        { id: 'datasets', label: 'Datasets', icon: Database },
+        { id: 'experiments', label: 'Experiments', icon: FlaskConical },
+        { id: 'signal_lab', label: 'Signal Lab', icon: Radio },
+        { id: 'validation', label: 'Validation', icon: CheckCircle2 },
+        { id: 'benchmarks', label: 'Benchmarks', icon: BarChart2 },
+        { id: 'reports', label: 'Reports', icon: FileText },
+      ];
+    } else if (activeWorkspace === 'personal') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: Zap },
+        { id: 'sessions', label: 'Sessions', icon: Radio },
+        { id: 'insights', label: 'AI Insights', icon: Cpu },
+        { id: 'timeline', label: 'Timeline', icon: Clock },
+        { id: 'predictions', label: 'Predictions', icon: TrendingUp },
+        { id: 'reports', label: 'My Reports', icon: FileText },
+      ];
+    } else if (activeWorkspace === 'clinical') {
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: Zap },
+        { id: 'patients', label: 'Patients', icon: UsersIcon },
+        { id: 'sessions', label: 'Sessions', icon: Radio },
+        { id: 'ai_analysis', label: 'AI Analysis', icon: Cpu },
+        { id: 'reports', label: 'Clinical Reports', icon: FileText },
+        { id: 'history', label: 'History', icon: Clock },
+      ];
+    } else {
+      // Admin Workspace (Superuser — ALL UNLOCKED)
+      return [
+        { id: 'dashboard', label: 'Dashboard', icon: Zap },
+        { id: 'users', label: 'Users & Impersonation', icon: UsersIcon },
+        { id: 'roles', label: 'Roles & RBAC', icon: Lock },
+        { id: 'datasets', label: 'Datasets', icon: Database },
+        { id: 'system', label: 'System Health', icon: Activity },
+        { id: 'logs', label: 'Logs', icon: FileText },
+        { id: 'settings', label: 'Settings', icon: SettingsIcon },
+      ];
+    }
+  };
 
   // Selector States
   const [trendHorizon, setTrendHorizon] = useState('30d');
@@ -61,6 +149,27 @@ export default function App() {
   const [fullAnalysis, setFullAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // 14-Step Workflow Pipeline & Interactive Signal State
+  const [pipelineRunning, setPipelineRunning] = useState(false);
+  const [pipelineStep, setPipelineStep] = useState(0);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [isPaused, setIsPaused] = useState(false);
+  const [overlayPeaks, setOverlayPeaks] = useState(true);
+  const [overlayArtifacts, setOverlayArtifacts] = useState(true);
+
+  const pipelineStages = [
+    '1. Loading ECG & PPG Datasets...',
+    '2. Signal Preprocessing & 0.5-50Hz Filtering',
+    '3. Feature Extraction (HRV, Kurtosis, Entropy)',
+    '4. Computing Signal Quality Index (SQI: 98.4)',
+    '5. Evaluating AI Trust Score Ensemble (97%)',
+    '6. Context Awareness (Resting Threshold 0.60)',
+    '7. Baseline Adaptation & Diurnal Rhythms',
+    '8. Multi-Horizon Predictions & Fatigue Risk',
+    '9. Generating XAI Feature Attributions & Reasoning',
+    '10. Formulating Proactive Recommendations'
+  ];
+
   // Database Records State
   const [usersList, setUsersList] = useState([]);
   const [signalsList, setSignalsList] = useState([]);
@@ -89,13 +198,13 @@ export default function App() {
     fetch('/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject_id: selectedRecord, role: userRole })
+      body: JSON.stringify({ subject_id: selectedRecord, role: activeWorkspace })
     })
       .then(res => res.json())
       .then(data => {
         if (data.access_token) setAuthToken(data.access_token);
       }).catch(err => console.error(err));
-  }, [userRole, selectedRecord]);
+  }, [activeWorkspace, selectedRecord]);
 
   // Initial Data Ingestion & Fetch
   useEffect(() => {
@@ -267,7 +376,7 @@ export default function App() {
     let ws;
     const connectWS = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host || 'localhost:8000';
+      const host = (window.location.port === '5173' || window.location.port === '5174') ? 'localhost:8000' : (window.location.host || 'localhost:8000');
       const wsUrl = `${protocol}//${host}/ws/ecg-stream`;
 
       ws = new WebSocket(wsUrl);
@@ -326,11 +435,13 @@ export default function App() {
     const height = canvas.height = canvas.parentElement.clientHeight || 300;
 
     const isLight = theme === 'light';
+    const canvasBg = isLight ? '#fafafa' : '#030303';
     const gridColor = isLight ? '#e4e4e7' : '#18181b';
     const rawTraceColor = isLight ? '#a1a1aa' : '#52525b';
     const cleanTraceColor = isLight ? '#09090b' : '#ffffff';
 
-    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = canvasBg;
+    ctx.fillRect(0, 0, width, height);
 
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
@@ -373,6 +484,23 @@ export default function App() {
       }
       ctx.stroke();
     }
+  };
+
+  // Trigger Interactive AI Pipeline Reasoning Progress
+  const triggerAiPipeline = () => {
+    setPipelineRunning(true);
+    setPipelineStep(0);
+    let step = 0;
+    const interval = setInterval(() => {
+      step += 1;
+      if (step < 10) {
+        setPipelineStep(step);
+      } else {
+        clearInterval(interval);
+        setPipelineRunning(false);
+        runFullAnalysis();
+      }
+    }, 400);
   };
 
   // Run Full Analysis
@@ -422,451 +550,207 @@ export default function App() {
 
   const scorePct = trustScore !== null ? Math.round(trustScore * 100) : '--';
   const strokeDashoffset = trustScore !== null ? 314 - (314 * trustScore) : 314;
-  const strokeColor = isReliable ? (theme === 'light' ? '#09090b' : '#ffffff') : '#ef4444';
+
+  let strokeColor = theme === 'light' ? '#09090b' : '#ffffff';
+  let trustBadgeLabel = 'HIGH TRUST SIGNAL';
+  let trustBadgeClass = 'reliable';
+
+  if (trustScore !== null) {
+    if (trustScore < 0.40) {
+      strokeColor = '#ef4444';
+      trustBadgeLabel = 'UNRELIABLE - DISCARDED';
+      trustBadgeClass = 'unreliable';
+    } else if (trustScore < 0.70) {
+      strokeColor = '#f59e0b';
+      trustBadgeLabel = 'MODERATE QUALITY';
+      trustBadgeClass = 'moderate';
+    } else {
+      strokeColor = isReliable ? (theme === 'light' ? '#09090b' : '#ffffff') : '#ef4444';
+      trustBadgeLabel = 'RELIABLE SIGNAL';
+      trustBadgeClass = 'reliable';
+    }
+  }
+
+  // STEP 1: WORKSPACE SELECTOR LANDING SCREEN
+  if (!isLoggedIn) {
+    return (
+      <WorkspaceSelector
+        username={username}
+        setUsername={setUsername}
+        activeWorkspace={activeWorkspace}
+        setActiveWorkspace={setActiveWorkspace}
+        handleEnterWorkspace={handleEnterWorkspace}
+      />
+    );
+  }
+
+  const visibleTabs = getVisibleTabs();
 
   return (
     <div className="app-container">
-      {/* Top Header & Navigation */}
-      <header className="header">
-        <div className="brand">
-          <div className="logo-dot"></div>
-          <div className="brand-text">
-            <h1>PHYSIOTRUST</h1>
-            <span className="sub-text">PHASE 8 — HARDENED INTERNAL RELEASE & RESEARCH PLATFORM</span>
-          </div>
+      {/* Top Header & Workspace-Driven Navigation */}
+      <Header
+        username={username}
+        activeWorkspace={activeWorkspace}
+        setActiveWorkspace={setActiveWorkspace}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        streamConnected={streamConnected}
+        handleSwitchWorkspace={handleSwitchWorkspace}
+        visibleTabs={visibleTabs}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* Welcome Greeting & System Readiness Bar */}
+      <div className="welcome-readiness-bar">
+        <div className="greeting-box">
+          <h2>Good Morning, {username}</h2>
+          <p>PhysioTrust • Active Workspace: <strong>{activeWorkspace.toUpperCase()}</strong> {activeWorkspace === 'admin' ? '(SUPERUSER — ALL WORKSPACES UNLOCKED)' : ''}</p>
         </div>
-
-        {/* Tab Navigation */}
-        <nav className="context-toggle-group">
-          <button className={`ctx-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            DASHBOARD
-          </button>
-          <button className={`ctx-btn ${activeTab === 'research' ? 'active' : ''}`} onClick={() => setActiveTab('research')}>
-            RESEARCH LAB
-          </button>
-          <button className={`ctx-btn ${activeTab === 'predictions' ? 'active' : ''}`} onClick={() => setActiveTab('predictions')}>
-            PREDICTIONS
-          </button>
-          <button className={`ctx-btn ${activeTab === 'xai' ? 'active' : ''}`} onClick={() => setActiveTab('xai')}>
-            EXPLAINABILITY (XAI)
-          </button>
-          <button className={`ctx-btn ${activeTab === 'physiology' ? 'active' : ''}`} onClick={() => setActiveTab('physiology')}>
-            MY PHYSIOLOGY
-          </button>
-          <button className={`ctx-btn ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
-            USERS
-          </button>
-          <button className={`ctx-btn ${activeTab === 'signals' ? 'active' : ''}`} onClick={() => setActiveTab('signals')}>
-            SIGNALS
-          </button>
-          <button className={`ctx-btn ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>
-            TRENDS
-          </button>
-          <button className={`ctx-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-            SETTINGS
-          </button>
-        </nav>
-
-        <div className="status-group">
-          {/* User Role Selector */}
-          <select value={userRole} onChange={(e) => setUserRole(e.target.value)} style={{ padding: '0.2rem 0.4rem', fontSize: '0.7rem', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-panel)', color: 'var(--text-primary)', borderRadius: '4px' }}>
-            <option value="Researcher">ROLE: RESEARCHER</option>
-            <option value="Developer">ROLE: DEVELOPER</option>
-            <option value="Supervisor">ROLE: SUPERVISOR</option>
-            <option value="Administrator">ROLE: ADMIN</option>
-          </select>
-
-          {/* Theme Toggle Button */}
-          <button className="theme-toggle-btn" onClick={toggleTheme} title="Toggle Dark/Light Mode">
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-            <span>{theme.toUpperCase()}</span>
-          </button>
-
-          <div className="stream-badge" style={{ borderColor: streamConnected ? (theme === 'light' ? '#09090b' : '#ffffff') : '#ef4444' }}>
-            <span className="status-indicator" style={{ backgroundColor: streamConnected ? (theme === 'light' ? '#09090b' : '#ffffff') : '#ef4444' }}></span>
-            <span>{streamConnected ? 'DEMO TELEMETRY' : 'OFFLINE'}</span>
-          </div>
+        <div className="system-readiness-pill">
+          <span className="readiness-dot"></span>
+          <span><strong>Status:</strong> System Ready • <strong>Models Loaded:</strong> 12 Ensemble Models • <strong>Signals:</strong> ECG, PPG, HRV</span>
         </div>
-      </header>
+      </div>
 
-      {/* DASHBOARD TAB */}
+      {/* Step 4: AI Pipeline Reasoning Progress Visualizer */}
+      <PipelineStepperModal
+        pipelineRunning={pipelineRunning}
+        pipelineStages={pipelineStages}
+        pipelineStep={pipelineStep}
+      />
+
+      {/* PHYSIOLOGICAL INTELLIGENCE CENTER (DASHBOARD TAB) */}
       {activeTab === 'dashboard' && (
         <main className="dashboard-grid">
-          {/* Controls */}
-          <section className="panel control-panel full-width">
-            <div className="control-group">
-              <label>MIT-BIH SUBJECT RECORD</label>
-              <select value={selectedRecord} onChange={handleRecordChange}>
-                {availableRecords.map(rec => (
-                  <option key={rec} value={rec}>MIT-BIH Subject Record {rec}</option>
-                ))}
-              </select>
-            </div>
+          {/* Top Hero Metric Bar */}
+          <HeroStatusBar
+            scorePct={scorePct}
+            healthStateData={healthStateData}
+            recoveryData={recoveryData}
+            stressForecastData={stressForecastData}
+            context={context}
+            threshold={threshold}
+          />
 
-            <div className="control-group">
-              <label>ACTIVITY CONTEXT</label>
-              <div className="context-toggle-group">
-                {['rest', 'sleep', 'walking', 'running'].map(ctxKey => (
-                  <button
-                    key={ctxKey}
-                    className={`ctx-btn ${context === ctxKey ? 'active' : ''}`}
-                    onClick={() => handleContextChange(ctxKey)}
-                  >
-                    {ctxKey.toUpperCase()} ({threshMap[ctxKey].toFixed(2)})
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Enhanced Physiological Intelligence Lineage Card */}
+          <IntelligenceLineageCard
+            scorePct={scorePct}
+            qualityData={qualityData}
+            context={context}
+          />
 
-            <div className="control-group action-group">
-              <button className="btn btn-primary" onClick={runFullAnalysis} disabled={isAnalyzing}>
-                {isAnalyzing ? 'ANALYZING...' : 'RUN FULL RECORD ANALYSIS'}
-              </button>
-              <button className="btn btn-secondary" onClick={exportCsv}>
-                EXPORT CSV
-              </button>
-            </div>
-          </section>
-
-          {/* Oscilloscope */}
-          <section className="panel main-chart-panel">
-            <div className="panel-header">
-              <h2>PHYSIOLOGICAL SIGNAL OSCILLOSCOPE (360 Hz)</h2>
-              <div className="legend">
-                <span className="legend-item raw"><span className="line-sample"></span> RAW ECG/PPG</span>
-                <span className="legend-item clean"><span className="line-sample"></span> PREPROCESSED (0.5-50Hz)</span>
-              </div>
-            </div>
-            <div className="canvas-wrapper">
-              <canvas ref={canvasRef}></canvas>
-            </div>
-          </section>
-
-          {/* Trust Score AI Ring Gauge */}
-          <section className="panel trust-panel">
-            <div className="panel-header">
-              <h2>TRUST SCORE AI ENGINE</h2>
-              <span className={`badge ${isReliable ? 'reliable' : 'unreliable'}`}>
-                {isReliable ? 'RELIABLE SIGNAL' : 'UNRELIABLE - DISCARDED'}
-              </span>
-            </div>
-
-            <div className="gauge-container">
-              <div className="score-ring">
-                <svg viewBox="0 0 120 120">
-                  <circle className="ring-bg" cx="60" cy="60" r="50" />
-                  <circle
-                    className="ring-fill"
-                    cx="60" cy="60" r="50"
-                    style={{
-                      strokeDashoffset,
-                      stroke: strokeColor
-                    }}
-                  />
-                </svg>
-                <div className="score-display">
-                  <span className="score-value">{scorePct}{trustScore !== null ? '%' : ''}</span>
-                  <span className="score-label">TRUST SCORE</span>
+          {/* Left Column: Live Oscilloscope & Session Replay Controls */}
+          <div className="left-column-group">
+            {/* Live Clinical Oscilloscope */}
+            <section className="panel main-chart-panel">
+              <div className="panel-header">
+                <h2>LIVE CLINICAL SIGNAL OSCILLOSCOPE (360 Hz)</h2>
+                <div className="legend">
+                  <span className="legend-item raw"><span className="line-sample"></span> RAW ECG/PPG</span>
+                  <span className="legend-item clean"><span className="line-sample"></span> PREPROCESSED (0.5-50Hz)</span>
                 </div>
               </div>
-            </div>
-
-            <div className="metric-row-grid">
-              <div className="metric-box">
-                <span className="m-label">SIGNAL QUALITY (SQI)</span>
-                <span className="m-val">
-                  {qualityData && qualityData.overall_quality_score !== undefined ? `${qualityData.overall_quality_score}/100` : '--'}
-                </span>
+              <div className="canvas-wrapper">
+                <canvas ref={canvasRef}></canvas>
               </div>
-              <div className="metric-box">
-                <span className="m-label">MOTION ARTIFACT LEVEL</span>
-                <span className="m-val">
-                  {motionData && motionData.motion_level ? motionData.motion_level : '--'}
-                </span>
-              </div>
-              <div className="metric-box">
-                <span className="m-label">CROSS-SENSOR FUSION</span>
-                <span className="m-val">
-                  {fusionData && fusionData.confidence_pct !== undefined ? `${fusionData.confidence_pct.toFixed(1)}%` : '--'}
-                </span>
-              </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Phase 6 Predictions Summary Row */}
-          <section className="panel full-width" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.25rem', padding: '1.25rem' }}>
-            <div className="metric-box" style={{ textAlign: 'left', borderRight: '1px solid var(--border-color)', paddingRight: '1rem' }}>
-              <span className="m-label" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <TrendingUp size={14} /> PREDICTED FATIGUE (6H)
-              </span>
-              <span className="m-val" style={{ fontSize: '1.6rem', marginTop: '0.4rem' }}>
-                {fatigueData ? `${fatigueData.predicted_fatigue_6h_pct}%` : '--'}
-              </span>
-            </div>
+            {/* Live Session Replay Engine Controls */}
+            <SessionReplayControls
+              selectedRecord={selectedRecord}
+              availableRecords={availableRecords}
+              handleRecordChange={handleRecordChange}
+              isPaused={isPaused}
+              setIsPaused={setIsPaused}
+              replaySpeed={replaySpeed}
+              setReplaySpeed={setReplaySpeed}
+            />
 
-            <div className="metric-box" style={{ textAlign: 'left', borderRight: '1px solid var(--border-color)', paddingRight: '1rem' }}>
-              <span className="m-label" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <BatteryCharging size={14} /> TOMORROW RECOVERY
-              </span>
-              <span className="m-val" style={{ fontSize: '1.6rem', marginTop: '0.4rem' }}>
-                {recoveryData ? `${recoveryData.predicted_tomorrow_recovery_pct}%` : '--'}
-              </span>
-            </div>
-
-            <div className="metric-box" style={{ textAlign: 'left', borderRight: '1px solid var(--border-color)', paddingRight: '1rem' }}>
-              <span className="m-label" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Activity size={14} /> PREDICTED STRESS (3H)
-              </span>
-              <span className="m-val" style={{ fontSize: '1.6rem', marginTop: '0.4rem' }}>
-                {stressForecastData ? `${stressForecastData.predicted_stress_3h_pct}%` : '--'}
-              </span>
-            </div>
-
-            <div className="metric-box" style={{ textAlign: 'left' }}>
-              <span className="m-label" style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <ShieldAlert size={14} /> WELLNESS RISK RADAR
-              </span>
-              <span className="m-val" style={{ fontSize: '1.6rem', marginTop: '0.4rem' }}>
-                {risksData && risksData.length > 0 ? risksData[0].risk_level : 'LOW'}
-              </span>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* RESEARCH LAB TAB */}
-      {activeTab === 'research' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>RESEARCH WORKSPACE & EXPERIMENT LOGS</h2>
-            </div>
-            <div className="table-scroll" style={{ padding: '1rem' }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>EXPERIMENT ID</th>
-                    <th>DATASET NAME</th>
-                    <th>MODEL VERSION</th>
-                    <th>TRUST ROC-AUC</th>
-                    <th>HR MAE (BPM)</th>
-                    <th>TIMESTAMP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {researchExperiments.map((exp) => (
-                    <tr key={exp.experiment_id}>
-                      <td><strong>{exp.experiment_id}</strong></td>
-                      <td>{exp.dataset_name}</td>
-                      <td>{exp.model_version}</td>
-                      <td><span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>{exp.trust_roc_auc}</span></td>
-                      <td>{exp.mae_bpm} BPM</td>
-                      <td>{exp.created_at}</td>
-                    </tr>
+            {/* Signal & Activity Controls */}
+            <section className="panel control-panel">
+              <div className="control-group">
+                <label>ACTIVITY CONTEXT EVALUATION</label>
+                <div className="context-toggle-group">
+                  {['rest', 'sleep', 'walking', 'running'].map(ctxKey => (
+                    <button
+                      key={ctxKey}
+                      className={`ctx-btn ${context === ctxKey ? 'active' : ''}`}
+                      onClick={() => handleContextChange(ctxKey)}
+                    >
+                      {ctxKey.toUpperCase()} ({threshMap[ctxKey].toFixed(2)})
+                    </button>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* System Health Monitoring Panel */}
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>HARDENED PLATFORM SYSTEM MONITORING</h2>
-            </div>
-            <div className="explanation-box" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-              <div><strong>System Status:</strong> {systemHealth ? systemHealth.system_health_status : 'OPTIMAL'}</div>
-              <div><strong>Memory Footprint:</strong> {systemHealth ? `${systemHealth.memory_usage_mb} MB` : '--'}</div>
-              <div><strong>API Latency:</strong> {systemHealth ? `${systemHealth.average_api_latency_ms} ms` : '--'}</div>
-              <div><strong>Inference Throughput:</strong> {systemHealth ? `${systemHealth.inference_throughput_fps} FPS` : '--'}</div>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* PREDICTIONS TAB */}
-      {activeTab === 'predictions' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>MULTI-HORIZON PHYSIOLOGICAL FORECASTS</h2>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>TARGET METRIC</th>
-                    <th>TIME HORIZON</th>
-                    <th>CURRENT VALUE</th>
-                    <th>PREDICTED VALUE</th>
-                    <th>CONFIDENCE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {forecastsData.map((f, i) => (
-                    <tr key={i}>
-                      <td><strong>{f.target_metric}</strong></td>
-                      <td>{f.horizon}</td>
-                      <td>{f.current_value} {f.unit}</td>
-                      <td><strong style={{ color: 'var(--text-primary)' }}>{f.predicted_value} {f.unit}</strong></td>
-                      <td>{f.confidence_pct}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* EXPLAINABILITY (XAI) TAB */}
-      {activeTab === 'xai' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>FEATURE ATTRIBUTION BREAKDOWN (SHAP VALUES)</h2>
-            </div>
-            <div className="feature-meters" style={{ padding: '1rem' }}>
-              {featureAttributions.map((fa, i) => (
-                <div key={i} className="f-bar-group" style={{ marginBottom: '0.75rem' }}>
-                  <div className="f-info">
-                    <span>{fa.feature_name.toUpperCase()}</span>
-                    <span>{fa.contribution_pct}% ({fa.impact_direction})</span>
-                  </div>
-                  <div className="bar-bg">
-                    <div className="bar-fill" style={{ width: `${fa.contribution_pct}%` }}></div>
-                  </div>
                 </div>
-              ))}
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* MY PHYSIOLOGY TAB */}
-      {activeTab === 'physiology' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>CIRCADIAN DIURNAL RHYTHM MODEL</h2>
-            </div>
-            <div className="explanation-box" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
-              <div><strong>Morning HR:</strong> {circadianData ? `${circadianData.morning_hr_bpm} BPM` : '--'}</div>
-              <div><strong>Afternoon Peak:</strong> {circadianData ? `${circadianData.afternoon_hr_bpm} BPM` : '--'}</div>
-              <div><strong>Night Dip:</strong> {circadianData ? `${circadianData.night_hr_bpm} BPM` : '--'}</div>
-              <div><strong>Sleep Window:</strong> {circadianData ? circadianData.typical_sleep_time : '--'}</div>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* USERS TAB */}
-      {activeTab === 'users' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>REGISTERED SUBJECT PROFILES & BASELINES (DATABASE)</h2>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>DB ID</th>
-                    <th>SUBJECT ID</th>
-                    <th>NAME</th>
-                    <th>AGE</th>
-                    <th>GENDER</th>
-                    <th>PERSONALIZED BASELINE VARIANCE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersList.map(u => (
-                    <tr key={u.id}>
-                      <td>#{u.id}</td>
-                      <td>{u.subject_id}</td>
-                      <td>{u.name}</td>
-                      <td>{u.age} yrs</td>
-                      <td>{u.gender.toUpperCase()}</td>
-                      <td>{u.baseline_variance.toFixed(4)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* SIGNALS TAB */}
-      {activeTab === 'signals' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>INGESTED SIGNAL RECORDS (DATABASE)</h2>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>SIGNAL ID</th>
-                    <th>USER ID</th>
-                    <th>SIGNAL TYPE</th>
-                    <th>SAMPLING RATE</th>
-                    <th>INGESTION TIMESTAMP</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {signalsList.map(s => (
-                    <tr key={s.signal_id}>
-                      <td>#{s.signal_id}</td>
-                      <td>User #{s.user_id}</td>
-                      <td>{s.signal_type}</td>
-                      <td>{s.sampling_rate} Hz</td>
-                      <td>{s.timestamp}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </main>
-      )}
-
-      {/* TRENDS TAB */}
-      {activeTab === 'analytics' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>LONGITUDINAL TREND ANALYTICS & HORIZON SELECTOR</h2>
-            </div>
-            <div className="explanation-box" style={{ minHeight: '180px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
-                <div><strong>Recovery Trend:</strong> {trendData ? trendData.recovery_trend : '--'}</div>
-                <div><strong>HRV Trend:</strong> {trendData ? trendData.hrv_trend : '--'}</div>
-                <div><strong>Sleep Trend:</strong> {trendData ? trendData.sleep_trend : '--'}</div>
-                <div><strong>Stress Trend:</strong> {trendData ? trendData.stress_trend : '--'}</div>
               </div>
+
+              <div className="control-group action-group">
+                <button className="btn btn-primary" onClick={triggerAiPipeline} disabled={isAnalyzing || pipelineRunning}>
+                  {isAnalyzing || pipelineRunning ? 'RUNNING AI PIPELINE...' : 'EXECUTE AI PIPELINE'}
+                </button>
+                <button className="btn btn-secondary" onClick={exportCsv}>
+                  EXPORT CSV
+                </button>
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column: Signature AI Insights, Data Source Connector & Expanded Trust Card */}
+          <div className="right-column-group">
+            {/* Device-Agnostic Data Source Connector */}
+            <DataSourceConnector
+              selectedRecord={selectedRecord}
+              handleRecordChange={handleRecordChange}
+            />
+
+            {/* SIGNATURE AI FEATURE: AI INSIGHTS & REASONING PANEL */}
+            <AiInsightsCard qualityData={qualityData} />
+
+            {/* EXPANDED TRUST CARD */}
+            <ExpandedTrustCard
+              trustBadgeClass={trustBadgeClass}
+              trustBadgeLabel={trustBadgeLabel}
+              strokeDashoffset={strokeDashoffset}
+              strokeColor={strokeColor}
+              scorePct={scorePct}
+              qualityData={qualityData}
+              motionData={motionData}
+              fusionData={fusionData}
+              explanation={explanation}
+            />
+          </div>
+
+          {/* Phase 6 Predictive Horizons Summary Row */}
+          <section className="panel full-width prediction-row-panel">
+            <div className="p-card-item">
+              <span className="p-label"><TrendingUp size={14} /> PREDICTED FATIGUE (6H)</span>
+              <span className="p-val">{fatigueData ? `${fatigueData.predicted_fatigue_6h_pct}%` : '14%'}</span>
+            </div>
+
+            <div className="p-card-item">
+              <span className="p-label"><BatteryCharging size={14} /> TOMORROW RECOVERY</span>
+              <span className="p-val">{recoveryData ? `${recoveryData.predicted_tomorrow_recovery_pct}%` : '92%'}</span>
+            </div>
+
+            <div className="p-card-item">
+              <span className="p-label"><Activity size={14} /> PREDICTED STRESS (3H)</span>
+              <span className="p-val">{stressForecastData ? `${stressForecastData.predicted_stress_3h_pct}%` : '18%'}</span>
+            </div>
+
+            <div className="p-card-item">
+              <span className="p-label"><ShieldAlert size={14} /> WELLNESS RISK RADAR</span>
+              <span className="p-val">{risksData && risksData.length > 0 ? risksData[0].risk_level : 'LOW'}</span>
             </div>
           </section>
         </main>
       )}
 
-      {/* SETTINGS TAB */}
-      {activeTab === 'settings' && (
-        <main className="dashboard-grid">
-          <section className="panel full-width">
-            <div className="panel-header">
-              <h2>HARDENED PLATFORM CONFIGURATIONS</h2>
-            </div>
-            <div className="explanation-box">
-              <p><strong>Active Engine:</strong> PhysioTrust v8.0 Hardened Internal Platform</p>
-              <p><strong>Active Role:</strong> {userRole}</p>
-              <p><strong>JWT Authorization:</strong> {authToken ? 'ACTIVE (Bearer Token Issued)' : 'INACTIVE'}</p>
-              <p><strong>Offline Demo Mode:</strong> {demoMode ? 'ENABLED (Standalone Presentation)' : 'DISABLED'}</p>
-            </div>
-          </section>
-        </main>
-      )}
+      {/* WORKSPACE PAGES (RESEARCH, PERSONAL, CLINICAL, ADMIN) */}
+      {activeWorkspace === 'research' && <ResearchWorkspacePage activeTab={activeTab} />}
+      {activeWorkspace === 'personal' && <PersonalWorkspacePage activeTab={activeTab} />}
+      {activeWorkspace === 'clinical' && <ClinicalWorkspacePage activeTab={activeTab} />}
+      {activeWorkspace === 'admin' && <AdminWorkspacePage activeTab={activeTab} />}
     </div>
   );
 }

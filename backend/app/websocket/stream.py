@@ -4,16 +4,16 @@ import json
 import numpy as np
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from physiotrust.datasets.loaders import load_ecg, load_ppg
-from physiotrust.signal_processing.preprocessing import preprocess_ecg_pipeline
-from physiotrust.quality_engine.quality_score import SignalQualityEngine
-from physiotrust.motion_engine.motion_detector import MotionArtifactDetector
-from physiotrust.fusion_engine.fusion import MultiSensorFusionEngine
-from physiotrust.features.ecg import extract_ecg_features
-from physiotrust.features.ppg import extract_ppg_features
-from physiotrust.models.trust_model import TrustScoreAIModel
-from physiotrust.trust_engine.reliability import TrustEngine
-from physiotrust.context_engine.gatekeeper import ContextAwareness
-from physiotrust.explainability.explainer import TrustExplainer
+from physiotrust.ai.signal_processing.preprocessing import preprocess_ecg_pipeline
+from physiotrust.ai.quality.quality_score import SignalQualityEngine
+from physiotrust.ai.context.motion_detector import MotionArtifactDetector
+from physiotrust.ai.fusion.fusion import MultiSensorFusionEngine
+from physiotrust.ai.features.ecg import extract_ecg_features
+from physiotrust.ai.features.ppg import extract_ppg_features
+from physiotrust.ai.models.trust_model import TrustScoreAIModel
+from physiotrust.ai.trust.reliability import TrustEngine
+from physiotrust.ai.context.gatekeeper import ContextAwareness
+from physiotrust.ai.explainability.explainer import TrustExplainer
 
 router = APIRouter()
 

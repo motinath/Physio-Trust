@@ -1,6 +1,6 @@
 import pytest
-from physiotrust.memory.timeline import PhysiologicalTimeline
-from physiotrust.memory.history import PhysiologicalHistoryService
+from physiotrust.ai.memory.timeline import PhysiologicalTimeline
+from physiotrust.ai.memory.history import PhysiologicalHistoryService
 
 
 def test_timeline_and_history():

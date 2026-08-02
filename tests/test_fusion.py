@@ -1,6 +1,6 @@
 import pytest
-from physiotrust.fusion_engine.fusion import MultiSensorFusionEngine
-from physiotrust.models.trust_model import TrustScoreAIModel
+from physiotrust.ai.fusion.fusion import MultiSensorFusionEngine
+from physiotrust.ai.models.trust_model import TrustScoreAIModel
 
 
 def test_multi_sensor_fusion():

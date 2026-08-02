@@ -17,28 +17,28 @@ from backend.app.services.user_service import get_or_create_user, list_users, up
 from backend.app.services.signal_service import create_signal_record, list_signal_records, store_trust_record
 
 from physiotrust.datasets.loaders import load_ecg, load_ppg, get_available_mitbih_records, load_hrv
-from physiotrust.signal_processing.preprocessing import preprocess_ecg_pipeline
-from physiotrust.signal_processing.segmentation import segment_signal
-from physiotrust.quality_engine.quality_score import SignalQualityEngine
-from physiotrust.motion_engine.motion_detector import MotionArtifactDetector
-from physiotrust.fusion_engine.fusion import MultiSensorFusionEngine
-from physiotrust.features.ecg import extract_ecg_features
-from physiotrust.features.ppg import extract_ppg_features
-from physiotrust.models.trust_model import TrustScoreAIModel
-from physiotrust.trust_engine.reliability import TrustEngine
-from physiotrust.context_engine.gatekeeper import ContextAwareness
-from physiotrust.personalization.baseline import PersonalizedBaseline
-from physiotrust.explainability.explainer import TrustExplainer
-from physiotrust.prediction.trends import TrendTracker
+from physiotrust.ai.signal_processing.preprocessing import preprocess_ecg_pipeline
+from physiotrust.ai.signal_processing.segmentation import segment_signal
+from physiotrust.ai.quality.quality_score import SignalQualityEngine
+from physiotrust.ai.context.motion_detector import MotionArtifactDetector
+from physiotrust.ai.fusion.fusion import MultiSensorFusionEngine
+from physiotrust.ai.features.ecg import extract_ecg_features
+from physiotrust.ai.features.ppg import extract_ppg_features
+from physiotrust.ai.models.trust_model import TrustScoreAIModel
+from physiotrust.ai.trust.reliability import TrustEngine
+from physiotrust.ai.context.gatekeeper import ContextAwareness
+from physiotrust.ai.personalization.baseline import PersonalizedBaseline
+from physiotrust.ai.explainability.explainer import TrustExplainer
+from physiotrust.ai.prediction.trends import TrendTracker
 
-from physiotrust.health_state.health_state import HealthStateEstimator
-from physiotrust.recommendation.recommendation import RecommendationEngine
-from physiotrust.memory.profile import get_default_user_profile
-from physiotrust.trend.trend_engine import TrendIntelligenceEngine
-from physiotrust.trend.analytics import TrendAnalyticsService
+from physiotrust.ai.health_state.health_state import HealthStateEstimator
+from physiotrust.ai.recommendation.recommendation import RecommendationEngine
+from physiotrust.ai.memory.profile import get_default_user_profile
+from physiotrust.ai.trend.trend_engine import TrendIntelligenceEngine
+from physiotrust.ai.trend.analytics import TrendAnalyticsService
 from physiotrust.ai.personalization.baseline_service import BaselineService
 from physiotrust.ai.personalization.circadian_model import CircadianEngine
-from physiotrust.memory.profile_manager import ProfileManager
+from physiotrust.ai.memory.profile_manager import ProfileManager
 
 from physiotrust.ai.explainability.confidence_engine import ConfidenceEngine
 from physiotrust.ai.explainability.feature_importance import FeatureAttributionEngine

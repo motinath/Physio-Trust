@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
-from physiotrust.signal_processing.filter import bandpass_filter, normalize_signal, preprocess_signal
-from physiotrust.signal_processing.windowing import window_signal
-from physiotrust.signal_processing.features import extract_quality_features
+from physiotrust.ai.signal_processing.filter import bandpass_filter, normalize_signal, preprocess_signal
+from physiotrust.ai.signal_processing.windowing import window_signal
+from physiotrust.ai.signal_processing.features import extract_quality_features
 
 
 def test_bandpass_filter():

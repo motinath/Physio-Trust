@@ -1,8 +1,8 @@
 import pytest
 from physiotrust.ai.personalization.baseline_service import BaselineService
 from physiotrust.ai.personalization.circadian_model import CircadianEngine
-from physiotrust.memory.profile_manager import ProfileManager
-from physiotrust.trend.analytics import TrendAnalyticsService
+from physiotrust.ai.memory.profile_manager import ProfileManager
+from physiotrust.ai.trend.analytics import TrendAnalyticsService
 
 
 def test_baseline_service():

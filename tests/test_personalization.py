@@ -1,6 +1,6 @@
 import pytest
-from physiotrust.personalization.adaptive_thresholds import AdaptiveThresholds
-from physiotrust.personalization.learning import BaselineOnlineLearner
+from physiotrust.ai.personalization.adaptive_thresholds import AdaptiveThresholds
+from physiotrust.ai.personalization.learning import BaselineOnlineLearner
 
 
 def test_adaptive_thresholds():

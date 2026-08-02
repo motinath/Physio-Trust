@@ -8,8 +8,8 @@ from backend.app.websocket.stream import router as ws_router
 
 app = FastAPI(
     title="PhysioTrust AI Platform",
-    description="AI-Powered Physiological Intelligence Layer for Sensor Data",
-    version="0.1.0"
+    description="PhysioTrust transforms physiological measurements into trustworthy, explainable, personalized, and predictive physiological intelligence.",
+    version="1.0.0-RC1"
 )
 
 # CORS middleware

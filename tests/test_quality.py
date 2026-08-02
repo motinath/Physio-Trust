@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
-from physiotrust.quality_engine.quality_score import SignalQualityEngine
-from physiotrust.quality_engine.snr import estimate_snr_db
-from physiotrust.quality_engine.noise_detector import detect_powerline_interference
-from physiotrust.quality_engine.drift_detector import detect_baseline_drift
+from physiotrust.ai.quality.quality_score import SignalQualityEngine
+from physiotrust.ai.quality.snr import estimate_snr_db
+from physiotrust.ai.quality.noise_detector import detect_powerline_interference
+from physiotrust.ai.quality.drift_detector import detect_baseline_drift
 
 
 def test_signal_quality_engine():

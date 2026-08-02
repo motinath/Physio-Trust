@@ -1,5 +1,5 @@
 """Layer 2 — Signal Quality Engine Package."""
-from physiotrust.quality_engine import (
+from physiotrust.ai.quality import (
     SignalQualityEngine,
     QualityBreakdown,
     estimate_snr_db,

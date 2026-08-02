@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
-from physiotrust.trust_engine.quality import SignalQualityEngine
-from physiotrust.trust_engine.reliability import TrustEngine
-from physiotrust.context_engine.gatekeeper import ContextAwareness
-from physiotrust.personalization.baseline import PersonalizedBaseline
-from physiotrust.explainability.explainer import TrustExplainer
+from physiotrust.ai.trust.quality import SignalQualityEngine
+from physiotrust.ai.trust.reliability import TrustEngine
+from physiotrust.ai.context.gatekeeper import ContextAwareness
+from physiotrust.ai.personalization.baseline import PersonalizedBaseline
+from physiotrust.ai.explainability.explainer import TrustExplainer
 
 
 def test_trust_engine_clean_vs_flatline():

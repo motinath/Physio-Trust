@@ -1,6 +1,6 @@
 import pytest
-from physiotrust.health_state.health_state import HealthStateEstimator
-from physiotrust.recommendation.recommendation import RecommendationEngine
+from physiotrust.ai.health_state.health_state import HealthStateEstimator
+from physiotrust.ai.recommendation.recommendation import RecommendationEngine
 
 
 def test_health_state_estimator():

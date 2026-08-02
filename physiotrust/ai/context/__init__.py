@@ -1,10 +1,6 @@
-"""Layer 3 — Context Intelligence Package."""
-from physiotrust.context_engine import ContextAwareness, ContextEvaluationResult
-from physiotrust.motion_engine import MotionArtifactDetector, MotionStatus
+"""PhysioTrust AI Context Package."""
 
-__all__ = [
-    "ContextAwareness",
-    "ContextEvaluationResult",
-    "MotionArtifactDetector",
-    "MotionStatus"
-]
+from .gatekeeper import ContextAwareness, ContextEvaluationResult
+from .motion_detector import MotionArtifactDetector, MotionStatus
+
+__all__ = ["ContextAwareness", "ContextEvaluationResult", "MotionArtifactDetector", "MotionStatus"]

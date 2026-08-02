@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from physiotrust.motion_engine.motion_detector import MotionArtifactDetector
+from physiotrust.ai.context.motion_detector import MotionArtifactDetector
 
 
 def test_motion_artifact_detector():

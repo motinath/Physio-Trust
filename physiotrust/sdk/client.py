@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Dict, Any, List
 from physiotrust.ai.prediction.prediction_engine import PredictionEngine
-from physiotrust.health_state.health_state import HealthStateEstimator
-from physiotrust.quality_engine.quality_score import SignalQualityEngine
+from physiotrust.ai.health_state.health_state import HealthStateEstimator
+from physiotrust.ai.quality.quality_score import SignalQualityEngine
 
 
 class PhysioTrustClient:
