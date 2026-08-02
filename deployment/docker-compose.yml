@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    container_name: physiotrust-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://physiotrust:physiotrust_pass@postgres:5432/physiotrust_db
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../data:/app/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: physiotrust-postgres
+    environment:
+      POSTGRES_USER: physiotrust
+      POSTGRES_PASSWORD: physiotrust_pass
+      POSTGRES_DB: physiotrust_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: physiotrust-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

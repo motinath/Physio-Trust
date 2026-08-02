@@ -1,0 +1,39 @@
+{
+  "datasets": [
+    {
+      "name": "MIT-BIH Arrhythmia Database",
+      "type": "ECG",
+      "sampling_rate": 360,
+      "purpose": "ECG classification, trust estimation, signal quality",
+      "path": "datasets/raw/mitbih/"
+    },
+    {
+      "name": "PPG-DaLiA",
+      "type": "PPG & IMU",
+      "sampling_rate": 64,
+      "purpose": "Motion artifacts, heart rate estimation, activity recognition",
+      "path": "datasets/raw/ppg_dalia/"
+    },
+    {
+      "name": "WESAD",
+      "type": "Wearable EDA/ECG/TEMP",
+      "sampling_rate": 700,
+      "purpose": "Stress detection, HR, EDA, respiration",
+      "path": "datasets/raw/wesad/"
+    },
+    {
+      "name": "Sleep-EDF",
+      "type": "Polysomnography",
+      "sampling_rate": 100,
+      "purpose": "Sleep stage detection, long-term autonomic analysis",
+      "path": "datasets/raw/sleep_edf/"
+    },
+    {
+      "name": "MIMIC-IV Waveform Database",
+      "type": "ICU Multi-parameter Telemetry",
+      "sampling_rate": 125,
+      "purpose": "Clinical validation, real-world ICU physiological signals",
+      "path": "datasets/raw/mimic_iv/"
+    }
+  ]
+}
