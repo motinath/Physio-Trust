@@ -1,1 +1,1 @@
-"""FastAPI Backend for PhysioTrust Physiological Intelligence Platform."""
+"""Backend app package for PhysioTrust."""
