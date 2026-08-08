@@ -1,6 +1,8 @@
 import os
 import numpy as np
 from typing import Dict, Any, List
+import wfdb
+
 
 # In-memory store for uploaded physiological datasets keyed by filename/subject_id
 UPLOADED_SIGNALS_STORE: Dict[str, Dict[str, Any]] = {}
@@ -71,7 +73,47 @@ def load_ecg(subject_id: str = "100", base_dir: str = "data/raw/mitbih") -> Dict
             "num_samples": stored["num_samples"],
         }
 
-    # 2. Built-in dataset signal generation driven by record parameters
+    # 2. Try loading a real MIT-BIH Arrhythmia Database record
+    mitbih_records = [
+        "100", "101", "102", "103", "104", "105", "106", "107", "108", "109",
+        "111", "112", "113", "114", "115", "116", "117", "118", "119", "121",
+        "122", "123", "124", "200", "201", "202", "203", "205", "207", "208",
+        "209", "210", "212", "213", "214", "215", "217", "219", "220", "221",
+        "222", "223", "228", "230", "231", "232", "233", "234"
+    ]
+    if subject_id in mitbih_records:
+        local_dir = os.path.abspath(base_dir) if base_dir else os.path.abspath("datasets/raw/mitbih")
+        # Map old data directory path to datasets directory path
+        if "data/raw/mitbih" in local_dir.replace("\\", "/"):
+            local_dir = os.path.abspath("datasets/raw/mitbih")
+            
+        record_path = os.path.join(local_dir, subject_id)
+        
+        try:
+            # Check if record files exist locally (both .hea and .dat)
+            hea_exists = os.path.exists(record_path + ".hea")
+            dat_exists = os.path.exists(record_path + ".dat")
+            
+            if not (hea_exists and dat_exists):
+                print(f"[PhysioTrust] Real MIT-BIH record {subject_id} not found locally. Downloading from PhysioNet...")
+                os.makedirs(local_dir, exist_ok=True)
+                wfdb.dl_database("mitdb", local_dir, records=[subject_id], overwrite=True)
+            
+            signals, fields = wfdb.rdsamp(record_path)
+            sig = signals[:, 0]
+            fs = float(fields["fs"])
+            return {
+                "subject_id": subject_id,
+                "name": f"MIT-BIH {subject_id}",
+                "signal": sig,
+                "fs": fs,
+                "duration_sec": len(sig) / fs,
+                "num_samples": len(sig),
+            }
+        except Exception as e:
+            print(f"[PhysioTrust] Error loading real MIT-BIH record {subject_id}: {e}. Falling back to simulation.")
+
+    # 3. Built-in dataset signal generation fallback driven by record parameters
     fs = 700.0 if "wesad" in subject_id else (1000.0 if "ptb" in subject_id else 360.0)
     duration_sec = 1805.0
     hr = 84.0 if subject_id in ["101", "wesad_s3"] else (65.0 if subject_id == "200" else 72.0)

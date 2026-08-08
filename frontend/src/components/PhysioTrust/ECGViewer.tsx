@@ -94,11 +94,10 @@ export function ECGViewer({
       ctx.stroke();
     }
 
-    const midY = height / 2;
-    const scaleY = (height / (isFullScreen ? 4.2 : 5.5)) * zoomLevel;
-
     const rawBuf = rawBufferRef.current || [];
     const cleanBuf = cleanBufferRef.current || [];
+
+    const midY = height / 2;
 
     // Empty Buffer State Message
     if ((!showRaw || rawBuf.length === 0) && (!showClean || cleanBuf.length === 0)) {
@@ -111,6 +110,28 @@ export function ECGViewer({
       ctx.textAlign = 'start';
       return;
     }
+
+    // Auto-center and Auto-scale waveform dynamically based on visible min/max bounds
+    let minVal = -1.0;
+    let maxVal = 1.0;
+
+    const activeBuf = (showClean && cleanBuf.length > 0) ? cleanBuf : rawBuf;
+    if (activeBuf.length > 0) {
+      const startIdx = Math.max(0, activeBuf.length - maxBufferLen + Math.floor(panOffset));
+      minVal = activeBuf[startIdx];
+      maxVal = activeBuf[startIdx];
+      for (let i = startIdx; i < activeBuf.length; i++) {
+        const v = activeBuf[i];
+        if (!isNaN(v) && isFinite(v)) {
+          if (v < minVal) minVal = v;
+          if (v > maxVal) maxVal = v;
+        }
+      }
+    }
+
+    const range = Math.max(0.5, maxVal - minVal);
+    const centerVal = (maxVal + minVal) / 2;
+    const scaleY = ((height * 0.70) / range) * zoomLevel;
 
     // 1. SLEEK LOW-PROMINENCE NOISE HAIRLINE PIN
     if (showNoiseRegions) {
@@ -162,7 +183,7 @@ export function ECGViewer({
       for (let i = startIdx; i < rawBuf.length; i++) {
         const x = (i - startIdx) * step;
         const val = rawBuf[i];
-        const y = midY - val * scaleY;
+        const y = midY - (val - centerVal) * scaleY;
 
         if (i === startIdx) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -182,7 +203,7 @@ export function ECGViewer({
       for (let i = startIdx; i < cleanBuf.length; i++) {
         const x = (i - startIdx) * step;
         const val = cleanBuf[i];
-        const y = midY - val * scaleY;
+        const y = midY - (val - centerVal) * scaleY;
 
         if (i === startIdx) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
@@ -202,7 +223,7 @@ export function ECGViewer({
             val > cleanBuf[i + 2]
           ) {
             const x = (i - startIdx) * step;
-            const y = midY - val * scaleY;
+            const y = midY - (val - centerVal) * scaleY;
 
             ctx.beginPath();
             ctx.arc(x, y - 5, 3.5, 0, Math.PI * 2);
