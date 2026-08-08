@@ -33,7 +33,7 @@ def process_signal(req: ProcessRequest, db: Session = Depends(get_db)):
         data_obj = load_ecg(subject_id=subject_id, base_dir=os.path.join("data", "raw", "mitbih"))
         raw_signal = data_obj['signal']
         fs = data_obj['fs']
-        signal_name = f"MITBIH_{data_obj['name']}"
+        signal_name = f"MITBIH_{data_obj.get('name', data_obj.get('subject_id', '100'))}"
 
     user = get_or_create_user(db, subject_id=req.subject_id or "100")
     sig_record = create_signal_record(db, user_id=user.id, signal_type="ECG", raw_signal=raw_signal.tolist()[:500], sampling_rate=fs)

@@ -64,6 +64,7 @@ def load_ecg(subject_id: str = "100", base_dir: str = "data/raw/mitbih") -> Dict
         stored = UPLOADED_SIGNALS_STORE[subject_id]
         return {
             "subject_id": subject_id,
+            "name": subject_id,
             "signal": stored["signal"],
             "fs": stored["fs"],
             "duration_sec": stored["duration_sec"],
@@ -72,12 +73,13 @@ def load_ecg(subject_id: str = "100", base_dir: str = "data/raw/mitbih") -> Dict
 
     # 2. Built-in dataset signal generation driven by record parameters
     fs = 700.0 if "wesad" in subject_id else (1000.0 if "ptb" in subject_id else 360.0)
-    duration_sec = 300.0
+    duration_sec = 1805.0
     hr = 84.0 if subject_id in ["101", "wesad_s3"] else (65.0 if subject_id == "200" else 72.0)
     sig = synthesize_ecg_signal(duration_sec=duration_sec, fs=fs, hr_bpm=hr)
 
     return {
         "subject_id": subject_id,
+        "name": subject_id,
         "signal": sig,
         "fs": fs,
         "duration_sec": duration_sec,
