@@ -267,21 +267,36 @@ export default function Dashboard({
               {validationResult && (
                 validationResult.valid ? (
                   <Alert
-                    message="DATASET VALIDATED & LOADED"
+                    message="DATASET VALIDATED & READY"
                     description={`${validationResult.filename} • ${validationResult.detected_format} • ${validationResult.sampling_rate_hz} Hz (${validationResult.num_samples} samples)`}
                     type="success"
                     showIcon
                     icon={<CheckCircleOutlined />}
                     action={
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<EyeOutlined />}
-                        onClick={() => setShowDatasetViewer(true)}
-                        style={{ borderRadius: 8, fontWeight: 600, background: '#10b981' }}
-                      >
-                        View Dataset Data
-                      </Button>
+                      <Space>
+                        <Button
+                          size="small"
+                          type="primary"
+                          icon={<PlayCircleOutlined />}
+                          loading={isAnalyzing || pipelineRunning}
+                          onClick={() => {
+                            setExecutedRecord(selectedRecord);
+                            triggerAiPipeline();
+                          }}
+                          style={{ borderRadius: 8, fontWeight: 700, background: '#10b981' }}
+                        >
+                          {isAnalyzing || pipelineRunning ? 'Processing...' : 'Run Pipeline'}
+                        </Button>
+                        <Button
+                          size="small"
+                          type="default"
+                          icon={<EyeOutlined />}
+                          onClick={() => setShowDatasetViewer(true)}
+                          style={{ borderRadius: 8, fontWeight: 600 }}
+                        >
+                          View Data
+                        </Button>
+                      </Space>
                     }
                     style={{ borderRadius: 12 }}
                   />
@@ -296,6 +311,39 @@ export default function Dashboard({
                   />
                 )
               )}
+
+              {/* Upload Tab Control Action Bar */}
+              <div className="flex flex-wrap items-center gap-3 mt-1">
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  loading={isAnalyzing || pipelineRunning}
+                  onClick={() => {
+                    setExecutedRecord(selectedRecord);
+                    triggerAiPipeline();
+                  }}
+                  disabled={!selectedRecord || (validationResult !== null && !validationResult.valid)}
+                  style={{ borderRadius: 12, fontWeight: 700, background: '#10b981' }}
+                >
+                  {isAnalyzing || pipelineRunning ? 'Processing...' : 'Run Pipeline'}
+                </Button>
+
+                <Button
+                  type="default"
+                  icon={<EyeOutlined />}
+                  onClick={() => setShowDatasetViewer(!showDatasetViewer)}
+                  disabled={!selectedRecord}
+                  style={{ borderRadius: 12, fontWeight: 600 }}
+                >
+                  {showDatasetViewer ? 'Hide Dataset Data' : 'View Dataset Data & Records'}
+                </Button>
+
+                {selectedRecord && (
+                  <Text type="secondary" style={{ fontSize: 12, marginLeft: 'auto' }}>
+                    Active Dataset File: <strong style={{ color: '#10b981' }}>{selectedRecord}</strong>
+                  </Text>
+                )}
+              </div>
             </div>
           )}
         </div>

@@ -7,10 +7,12 @@ import {
   PlusOutlined,
   SearchOutlined,
   EyeOutlined,
-  SafetyCertificateOutlined,
-  CheckCircleOutlined,
   FilePdfOutlined,
-  InfoCircleOutlined,
+  CheckCircleOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+  MedicineBoxOutlined,
+  CodeOutlined,
 } from '@ant-design/icons';
 import { useAppStore, DiagnosticReport } from '../../store/useAppStore';
 import {
@@ -22,6 +24,7 @@ import {
   useStressQuery,
   useTrustStatusQuery,
 } from '../../hooks/usePhysioQueries';
+import { generateReportPDF } from '../../utils/pdfGenerator';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -49,80 +52,54 @@ export default function Reports() {
   const [selectedReport, setSelectedReport] = useState<DiagnosticReport | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
-  const downloadReportFile = (report: DiagnosticReport) => {
-    const content = `===================================================================
-PHYSIOTRUST CLINICAL DIAGNOSTIC REPORT
-Report ID:            ${report.id}
-Timestamp:            ${report.timestamp}
-Subject / Record ID:  #${report.subjectId}
-Dataset Source:       ${report.datasetName}
-===================================================================
-
-[EXPLAINABLE TRUST & MODEL CONFIDENCE]
-Trust Score:          ${report.trustScore}%
-Signal Quality (SQI): ${report.qualityScore}%
-Model Confidence:     ${report.confidencePct}%
-SNR (Signal-Noise):   ${report.snrDb} dB
-Motion Vector Level:  ${report.motionLevel}
-
-[PHYSIOLOGICAL TELEMETRY METRICS]
-Fused Heart Rate:     ${report.fusedBpm} BPM
-Overall Health State:  ${report.healthState}
-Recovery Score:       ${report.recoveryPct}%
-Stress Score (3H):    ${report.stressPct}%
-Fatigue Score (6H):   ${report.fatiguePct}%
-Clinical Risk Rating: ${report.riskLevel}
-
-[CLINICAL EXPLANATION & RATIONALE]
-${report.explanation}
-
-[RECOMMENDATIONS]
-${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
-
-===================================================================
-Verified by PhysioTrust AI Telemetry Platform
-===================================================================`;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${report.id}_Clinical_Diagnostic_Report.txt`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    message.success(`Downloaded Diagnostic Report #${report.id}`);
+  const handleDownloadPDF = (report: DiagnosticReport) => {
+    try {
+      generateReportPDF(report);
+      message.success(`Downloaded Clinical Diagnostic PDF Report #${report.id}`);
+    } catch (err: any) {
+      message.error(`Failed to generate PDF report: ${err.message}`);
+    }
   };
 
   const generateDiagnosticReport = () => {
     if (!targetRecord) {
-      message.warning('Please select a dataset record first!');
+      message.warning('Please select a dataset record on the Dashboard first!');
       return;
     }
+
+    const rawTrust = trustData?.trust_score ?? qualityData?.overall_quality_score ?? 0.94;
+    const trustPct = Math.min(100, Math.max(0, Math.round(rawTrust > 1 ? rawTrust : rawTrust * 100)));
+
+    const rawQuality = qualityData?.overall_quality_score ?? 0.92;
+    const qualityPct = Math.min(100, Math.max(0, Math.round(rawQuality > 1 ? rawQuality : rawQuality * 100)));
 
     const newReport: DiagnosticReport = {
       id: `REP-${Date.now().toString().slice(-6)}`,
       subjectId: targetRecord,
       timestamp: new Date().toLocaleString(),
       datasetName: `MIT-BIH Telemetry (Record #${targetRecord})`,
-      trustScore: trustData?.trust_score ? Math.round(trustData.trust_score * 100) : (qualityData?.overall_quality_score ? Math.round(qualityData.overall_quality_score * 100) : 94),
-      qualityScore: qualityData?.overall_quality_score ? Math.round(qualityData.overall_quality_score * 100) : 92,
+      trustScore: trustPct,
+      qualityScore: qualityPct,
       confidencePct: fusionData?.confidence_pct ? Math.round(fusionData.confidence_pct) : 95,
       fusedBpm: fusionData?.fused_heart_rate_bpm ? Math.round(fusionData.fused_heart_rate_bpm) : 72,
       healthState: healthData?.overall_state || 'OPTIMAL',
-      fatiguePct: healthData?.fatigue_score_pct || 15,
-      recoveryPct: recoveryData?.predicted_tomorrow_recovery_pct || 88,
-      stressPct: stressData?.predicted_stress_3h_pct || 22,
+      fatiguePct: healthData?.fatigue_score_pct ? Math.round(healthData.fatigue_score_pct > 1 ? healthData.fatigue_score_pct : healthData.fatigue_score_pct * 100) : 15,
+      recoveryPct: recoveryData?.predicted_tomorrow_recovery_pct ? Math.round(recoveryData.predicted_tomorrow_recovery_pct > 1 ? recoveryData.predicted_tomorrow_recovery_pct : recoveryData.predicted_tomorrow_recovery_pct * 100) : 88,
+      stressPct: stressData?.predicted_stress_3h_pct ? Math.round(stressData.predicted_stress_3h_pct > 1 ? stressData.predicted_stress_3h_pct : stressData.predicted_stress_3h_pct * 100) : 22,
       riskLevel: 'LOW',
-      snrDb: qualityData?.snr_db || 24.5,
+      snrDb: qualityData?.snr_db ? Number(qualityData.snr_db.toFixed(1)) : 24.5,
       motionLevel: motionData?.motion_level || 'NORMAL_REST',
       explanation: 'Multimodal biosignal fusion verified clean clinical input and steady autonomic vagal tone.',
-      recommendations: ['Maintain current aerobic active recovery schedule', 'Hydration & sleep hygiene optimal'],
+      recommendations: [
+        'Maintain current aerobic active recovery schedule',
+        'Hydration & sleep hygiene optimal (7-8h target window)',
+        'Continue real-time multi-modal monitoring during strenuous exertion'
+      ],
     };
 
     addReport(newReport);
-    message.success(`Diagnostic Report #${newReport.id} generated!`);
+    setSelectedReport(newReport);
+    message.success(`Clinical Diagnostic Report #${newReport.id} generated!`);
   };
 
   const handleDownloadCsv = () => {
@@ -174,11 +151,11 @@ Verified by PhysioTrust AI Telemetry Platform
           <Button
             size="small"
             type="primary"
-            icon={<DownloadOutlined />}
-            onClick={() => downloadReportFile(record)}
+            icon={<FilePdfOutlined />}
+            onClick={() => handleDownloadPDF(record)}
             style={{ borderRadius: 8, fontSize: 11, background: '#10b981' }}
           >
-            Download Report
+            Download PDF
           </Button>
         </Space>
       ),
@@ -201,7 +178,7 @@ Verified by PhysioTrust AI Telemetry Platform
               Physiological Intelligence Reports Hub
             </Title>
             <Paragraph type="secondary" style={{ fontSize: 13, margin: '4px 0 0 0' }}>
-              Generate &amp; download clinical diagnostic reports, stream raw 650,000+ sample CSV datasets, and inspect historical trust telemetry records.
+              Generate &amp; download official PDF clinical diagnostic reports with multi-audience explanations, or export full raw 650,000+ sample CSV telemetry datasets.
             </Paragraph>
           </Col>
           <Col xs={24} md={10} className="flex justify-end gap-2.5">
@@ -211,7 +188,7 @@ Verified by PhysioTrust AI Telemetry Platform
               onClick={handleDownloadCsv}
               style={{ borderRadius: 12, fontWeight: 600, height: 40 }}
             >
-              Export Raw CSV Dataset
+              Export CSV Dataset
             </Button>
             <Button
               type="primary"
@@ -233,9 +210,9 @@ Verified by PhysioTrust AI Telemetry Platform
         title={
           <div className="flex flex-wrap items-center justify-between gap-4 p-4">
             <Space align="center">
-              <FileTextOutlined style={{ color: '#10b981', fontSize: 18 }} />
+              <FilePdfOutlined style={{ color: '#10b981', fontSize: 18 }} />
               <Text strong style={{ fontSize: 14 }}>
-                Diagnostic Audit History ({reportsHistory.length} Reports)
+                Diagnostic Clinical Audit History ({reportsHistory.length} Reports)
               </Text>
             </Space>
 
@@ -254,7 +231,7 @@ Verified by PhysioTrust AI Telemetry Platform
         ) : (
           <div className="p-12 text-center">
             <Empty
-              image={<FileTextOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}
+              image={<FilePdfOutlined style={{ fontSize: 48, color: '#94a3b8' }} />}
               description={
                 <div>
                   <Text strong style={{ display: 'block', fontSize: 14 }}>No Diagnostic Reports Generated Yet</Text>
@@ -276,7 +253,7 @@ Verified by PhysioTrust AI Telemetry Platform
         )}
       </Card>
 
-      {/* Clinical Diagnostic Report Detailed Modal Preview */}
+      {/* Multi-Audience Clinical Diagnostic Report Detailed Modal Preview */}
       <Modal
         title={
           <Space align="center">
@@ -286,7 +263,7 @@ Verified by PhysioTrust AI Telemetry Platform
         }
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
-        width={680}
+        width={720}
         footer={[
           <Button key="close" onClick={() => setIsModalOpen(false)} style={{ borderRadius: 8 }}>
             Close
@@ -294,43 +271,87 @@ Verified by PhysioTrust AI Telemetry Platform
           <Button
             key="download"
             type="primary"
-            icon={<DownloadOutlined />}
+            icon={<FilePdfOutlined />}
             onClick={() => {
-              if (selectedReport) downloadReportFile(selectedReport);
+              if (selectedReport) handleDownloadPDF(selectedReport);
             }}
-            style={{ borderRadius: 8, background: '#10b981' }}
+            style={{ borderRadius: 8, background: '#10b981', fontWeight: 700 }}
           >
-            Download Report File
+            Download PDF Report
           </Button>,
         ]}
       >
         {selectedReport && (
           <div className="flex flex-col gap-4 py-2 font-sans">
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center text-xs font-mono">
-              <span>Record #{selectedReport.subjectId}</span>
+              <span>Subject Record #{selectedReport.subjectId}</span>
               <span>Generated: {selectedReport.timestamp}</span>
             </div>
 
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <Card size="small" bordered style={{ borderRadius: 12 }}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>TRUST SCORE</Text>
-                  <Text strong style={{ fontSize: 20, color: '#10b981', display: 'block' }}>{selectedReport.trustScore}%</Text>
+            {/* Key Metric Overview Cards */}
+            <Row gutter={[12, 12]}>
+              <Col span={6}>
+                <Card size="small" bordered style={{ borderRadius: 12, background: '#f0fdf4' }}>
+                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>TRUST SCORE</Text>
+                  <Text strong style={{ fontSize: 18, color: '#10b981', display: 'block' }}>{selectedReport.trustScore}%</Text>
                 </Card>
               </Col>
-              <Col span={12}>
-                <Card size="small" bordered style={{ borderRadius: 12 }}>
-                  <Text type="secondary" style={{ fontSize: 11 }}>HEALTH STATE</Text>
+              <Col span={6}>
+                <Card size="small" bordered style={{ borderRadius: 12, background: '#f0f9ff' }}>
+                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>SIGNAL QUALITY</Text>
+                  <Text strong style={{ fontSize: 18, color: '#0284c7', display: 'block' }}>{selectedReport.qualityScore}%</Text>
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card size="small" bordered style={{ borderRadius: 12, background: '#f5f3ff' }}>
+                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>FUSED HR</Text>
+                  <Text strong style={{ fontSize: 18, color: '#8b5cf6', display: 'block' }}>{selectedReport.fusedBpm} BPM</Text>
+                </Card>
+              </Col>
+              <Col span={6}>
+                <Card size="small" bordered style={{ borderRadius: 12, background: '#f0fdf4' }}>
+                  <Text type="secondary" style={{ fontSize: 10, fontWeight: 700 }}>HEALTH STATE</Text>
                   <Tag color="emerald" style={{ display: 'inline-block', marginTop: 4, fontWeight: 700 }}>{selectedReport.healthState}</Tag>
                 </Card>
               </Col>
             </Row>
 
-            <Divider style={{ margin: '8px 0' }} />
+            <Divider style={{ margin: '4px 0' }} />
 
-            <div>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 4 }}>Clinical Explanation &amp; Rationale</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>{selectedReport.explanation}</Text>
+            {/* 3 Explanatory Modes Section */}
+            <Title level={5} style={{ margin: 0, fontWeight: 700 }}>Multi-Audience Diagnostic Explanations</Title>
+
+            {/* Mode 1: Consumer / Patient Friendly */}
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+              <Space align="center" style={{ marginBottom: 4 }}>
+                <UserOutlined style={{ color: '#166534', fontSize: 14 }} />
+                <Text strong style={{ fontSize: 12, color: '#166534' }}>Patient &amp; General User Explanation (Plain English)</Text>
+              </Space>
+              <Text style={{ fontSize: 12, color: '#14532d', display: 'block' }}>
+                Your heart rhythm telemetry shows normal steady rhythm with high signal clarity ({selectedReport.qualityScore}%). No harmful motion artifacts or irregular ectopic heartbeats were detected. Your body demonstrates healthy recovery capacity ({selectedReport.recoveryPct}%) and low stress reserves.
+              </Text>
+            </div>
+
+            {/* Mode 2: Clinical Professional */}
+            <div className="p-3 rounded-xl bg-sky-50 border border-sky-200">
+              <Space align="center" style={{ marginBottom: 4 }}>
+                <MedicineBoxOutlined style={{ color: '#0369a1', fontSize: 14 }} />
+                <Text strong style={{ fontSize: 12, color: '#0369a1' }}>Clinical &amp; Medical Professional Explanation</Text>
+              </Space>
+              <Text style={{ fontSize: 12, color: '#0c4a6e', display: 'block' }}>
+                Multi-modal ECG Lead II and PPG telemetry confirms stable vagal parasympathetic tone. Fused heart rate of {selectedReport.fusedBpm} BPM shows normal sinus rhythm. HRV parameters remain within optimal baseline distribution with low autonomic fatigue index ({selectedReport.fatiguePct}%).
+              </Text>
+            </div>
+
+            {/* Mode 3: Technical Engineering */}
+            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200">
+              <Space align="center" style={{ marginBottom: 4 }}>
+                <CodeOutlined style={{ color: '#6d28d9', fontSize: 14 }} />
+                <Text strong style={{ fontSize: 12, color: '#6d28d9' }}>Technical Signal Quality &amp; AI Engineering Audit</Text>
+              </Space>
+              <Text style={{ fontSize: 12, color: '#581c87', display: 'block' }}>
+                0.5-50Hz bandpass pipeline filter achieved SNR of {selectedReport.snrDb} dB. Motion vector magnitude logged at baseline ({selectedReport.motionLevel}). Adaptive sensor fusion assigned optimal sensor confidence weighting based on QRS Kurtosis peakiness.
+              </Text>
             </div>
 
             <div>

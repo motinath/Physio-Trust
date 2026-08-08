@@ -23,7 +23,12 @@ import { ECGViewer } from '../../components/PhysioTrust/ECGViewer';
 
 const { Title, Text, Paragraph } = Typography;
 
-export default function Monitoring() {
+interface MonitoringProps {
+  rawBufferRef: React.RefObject<number[]>;
+  cleanBufferRef: React.RefObject<number[]>;
+}
+
+export default function Monitoring({ rawBufferRef, cleanBufferRef }: MonitoringProps) {
   const { executedRecord, setActiveTab } = useAppStore();
   const targetRecord = executedRecord || '';
 
@@ -41,37 +46,11 @@ export default function Monitoring() {
   const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
   const [timestampStr, setTimestampStr] = useState<string>('--:--:--.---');
 
-  const rawBufferRef = useRef<number[]>([]);
-  const cleanBufferRef = useRef<number[]>([]);
-
-  // Real-time signal oscilloscope wave generator fed by dynamic telemetry parameters
+  // Real-time signal oscilloscope timestamp updater
   useEffect(() => {
     if (!executedRecord) return;
 
-    let sampleIdx = 0;
     const interval = setInterval(() => {
-      sampleIdx++;
-      const t = sampleIdx * (1.0 / 360.0);
-      const hr = fusionData?.fused_heart_rate_bpm || 72.0;
-      const beatPeriod = 60.0 / hr;
-      const phase = (t % beatPeriod) / beatPeriod;
-
-      const pWave = 0.15 * Math.exp(-Math.pow(phase - 0.2, 2) / (2 * Math.pow(0.02, 2)));
-      const qWave = -0.15 * Math.exp(-Math.pow(phase - 0.38, 2) / (2 * Math.pow(0.005, 2)));
-      const rPeak = 1.2 * Math.exp(-Math.pow(phase - 0.4, 2) / (2 * Math.pow(0.008, 2)));
-      const sWave = -0.25 * Math.exp(-Math.pow(phase - 0.42, 2) / (2 * Math.pow(0.008, 2)));
-      const tWave = 0.35 * Math.exp(-Math.pow(phase - 0.65, 2) / (2 * Math.pow(0.04, 2)));
-
-      const cleanVal = pWave + qWave + rPeak + sWave + tWave;
-      const noise = (Math.random() - 0.5) * 0.08;
-      const rawVal = cleanVal + noise;
-
-      rawBufferRef.current.push(rawVal);
-      cleanBufferRef.current.push(cleanVal);
-
-      if (rawBufferRef.current.length > 600) rawBufferRef.current.shift();
-      if (cleanBufferRef.current.length > 600) cleanBufferRef.current.shift();
-
       const now = new Date();
       setTimestampStr(
         `${now.getHours().toString().padStart(2, '0')}:${now
@@ -85,7 +64,7 @@ export default function Monitoring() {
     }, 1000 / 60);
 
     return () => clearInterval(interval);
-  }, [executedRecord, fusionData?.fused_heart_rate_bpm]);
+  }, [executedRecord]);
 
   if (!executedRecord) {
     return (
