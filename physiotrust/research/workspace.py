@@ -33,7 +33,7 @@ class ResearchWorkspace:
             model_version=model_version,
             trust_roc_auc=trust_roc_auc,
             mae_bpm=mae_bpm,
-            created_at=datetime.datetime.utcnow().isoformat()
+            created_at=datetime.datetime.now(datetime.timezone.utc).isoformat()
         )
         self._experiments.append(log)
         return log

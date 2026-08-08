@@ -40,7 +40,13 @@ class MultiSensorFusionEngine:
             ppg_w = 1.0 - ecg_w
 
         fused_hr = (ecg_w * ecg_bpm) + (ppg_w * ppg_bpm)
-        agreement = calculate_sensor_agreement(ecg_bpm, ppg_bpm, is_motion_high=is_motion_high)
+        agreement = calculate_sensor_agreement(
+            ecg_bpm=ecg_bpm,
+            ppg_bpm=ppg_bpm,
+            is_motion_high=is_motion_high,
+            ecg_sqi=ecg_sqi,
+            ppg_sqi=ppg_sqi
+        )
 
         conf = agreement.agreement_score * 100.0
 

@@ -44,7 +44,10 @@ def extract_quality_features(signal_window: np.ndarray) -> SignalFeatures:
     zcr = int(len(np.where(np.diff(np.sign(signal_window)))[0]))
 
     # 5. Kurtosis
-    kurt = float(scipy.stats.kurtosis(signal_window))
+    if np.std(signal_window) < 1e-8:
+        kurt = 0.0
+    else:
+        kurt = float(scipy.stats.kurtosis(signal_window))
     if np.isnan(kurt):
         kurt = 0.0
 

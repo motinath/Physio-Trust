@@ -26,7 +26,7 @@ class PhysiologicalTimeline:
         self.snapshots: List[TimelineSnapshot] = []
 
     def add_snapshot(self, hr_bpm: float, hrv_rmssd: float, trust_score: float, context: str = "rest", activity: str = "resting"):
-        now_str = datetime.datetime.utcnow().isoformat()
+        now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
         snap = TimelineSnapshot(
             timestamp=now_str,
             heart_rate_bpm=round(hr_bpm, 1),

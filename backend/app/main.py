@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from backend.app.api.routes import router as api_router
+from backend.app.modules import api_router
 from backend.app.websocket.stream import router as ws_router
 
 app = FastAPI(

@@ -31,8 +31,13 @@ async def ecg_stream_endpoint(websocket: WebSocket):
     subject_id = "100"
 
     data_dir = os.path.join("data", "raw", "mitbih")
-    data_obj = load_ecg(subject_id=subject_id, base_dir=data_dir)
-    ppg_obj = load_ppg(subject_id="S1")
+    try:
+        data_obj = load_ecg(subject_id=subject_id, base_dir=data_dir)
+        ppg_obj = load_ppg(subject_id="S1")
+    except FileNotFoundError as e:
+        print(f"[PhysioTrust WS] Initial dataset files not found: {e}")
+        await websocket.close(code=4004, reason="Dataset record files not found.")
+        return
     
     if data_obj is None:
         await websocket.close(reason="MIT-BIH dataset record not found.")
@@ -62,14 +67,17 @@ async def ecg_stream_endpoint(websocket: WebSocket):
                     context = data['context']
                 if 'subject_id' in data and data['subject_id'] != subject_id:
                     new_sub = data['subject_id']
-                    new_obj = load_ecg(subject_id=new_sub, base_dir=data_dir)
-                    if new_obj is not None:
-                        subject_id = new_sub
-                        raw_signal = new_obj['signal']
-                        fs = new_obj['fs']
-                        clean_signal = preprocess_ecg_pipeline(raw_signal, fs=fs)
-                        buffer_len = len(clean_signal)
-                        idx = 0
+                    try:
+                        new_obj = load_ecg(subject_id=new_sub, base_dir=data_dir)
+                        if new_obj is not None:
+                            subject_id = new_sub
+                            raw_signal = new_obj['signal']
+                            fs = new_obj['fs']
+                            clean_signal = preprocess_ecg_pipeline(raw_signal, fs=fs)
+                            buffer_len = len(clean_signal)
+                            idx = 0
+                    except FileNotFoundError:
+                        print(f"[PhysioTrust WS] Could not change to subject {new_sub}: File not found.")
             except asyncio.TimeoutError:
                 pass
 
